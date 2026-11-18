@@ -3,8 +3,8 @@ package com.carhelper.signs.detection
 import kotlin.math.max
 import kotlin.math.min
 
-/** Một loại biển báo: mã QCVN 41 và câu sẽ được đọc lên. */
-data class SignLabel(val code: String, val speech: String)
+/** Một loại biển báo: mã QCVN 41 và câu sẽ được đọc lên. [silent] = chỉ hiện, không đọc. */
+data class SignLabel(val code: String, val speech: String, val silent: Boolean = false)
 
 /** Hình chữ nhật toạ độ chuẩn hoá [0,1]. Không dùng RectF để test được trên JVM. */
 data class Box(val left: Float, val top: Float, val right: Float, val bottom: Float) {
@@ -50,14 +50,18 @@ sealed interface DetectorStatus {
 }
 
 object LabelParser {
-    /** Mỗi dòng: `MÃ|câu đọc`. Dòng trống và dòng bắt đầu bằng `#` bị bỏ qua. */
+    /** Mỗi dòng: `MÃ|câu đọc[|im]`. Dòng trống và dòng bắt đầu bằng `#` bị bỏ qua. */
     fun parse(lines: Sequence<String>): List<SignLabel> = lines
         .map { it.trim() }
         .filter { it.isNotEmpty() && !it.startsWith("#") }
         .map { line ->
-            val parts = line.split("|", limit = 2)
+            val parts = line.split("|", limit = 3)
             val code = parts[0].trim()
-            SignLabel(code, parts.getOrNull(1)?.trim()?.ifEmpty { null } ?: code)
+            SignLabel(
+                code = code,
+                speech = parts.getOrNull(1)?.trim()?.ifEmpty { null } ?: code,
+                silent = parts.getOrNull(2)?.trim().equals("im", ignoreCase = true),
+            )
         }
         .toList()
 }

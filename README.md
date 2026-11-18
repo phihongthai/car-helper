@@ -10,6 +10,7 @@ CameraX (1280x720, RGBA, chỉ trong RAM)
   → xoay thẳng + cắt vùng phía trên bên phải (ROI) + letterbox vào input model
   → YOLO TFLite (GPU nếu có, không thì CPU 4 luồng)
   → NMS không phân biệt lớp
+  → biển tốc độ: cắt ảnh gốc, OCR đọc số (ML Kit)
   → bỏ phiếu 3/5 frame + không đọc lại cùng biển trong 30 giây
   → TextToSpeech tiếng Việt (tạm hạ nhỏ nhạc khi đọc)
 ```
@@ -30,19 +31,24 @@ Nút **Màn hình đen** tắt preview và hạ độ sáng về 0 để máy m�
 | `app/.../speech/SignSpeaker.kt` | TTS tiếng Việt + audio focus |
 | `app/.../system/ThermalGovernor.kt` | Giảm FPS theo nhiệt độ máy |
 | `app/src/main/assets/labels.txt` | Danh sách lớp, **thứ tự = classId** |
-| `training/train.py` | Huấn luyện YOLO và export TFLite vào assets |
+| `app/.../detection/SpeedReader.kt` | OCR số trên biển hạn chế tốc độ (ML Kit) |
+| `training/train.py` | Huấn luyện YOLO |
+| `training/export_tflite.py` | Export .pt → TFLite NHWC vào assets |
 
 ## Bắt đầu
 
-1. **Có model.** App chạy được khi chưa có model (chỉ hiện camera và báo "Model: chưa có").
-   Để nhận diện được, cần file `app/src/main/assets/traffic_signs.tflite`:
+1. **Model** đã có sẵn: `app/src/main/assets/traffic_signs.tflite` (36 MB), YOLO11s 32 lớp biển VN
+   từ [Secret350/Real-time-Traffic-Signs-Detection](https://github.com/Secret350/Real-time-Traffic-Signs-Detection)
+   (Apache-2.0, `traffic_signs.LICENSE`), train trên ~16.000 ảnh Kaggle + Zalo AI, mAP50 ≈ 0,77.
+   Model chỉ có một lớp "hạn chế tốc độ"; con số được đọc bằng ML Kit OCR (offline) trên ảnh cắt của biển.
+
+   Thay model khác / tự train (dataset YOLO, classId đúng thứ tự `labels.txt`, không lật ngang):
    ```bash
    pip install -r training/requirements.txt
-   python training/train.py --dataset /duong/dan/dataset
+   python training/train.py --dataset /duong/dan/dataset           # train + export
+   python training/export_tflite.py --weights best.pt              # chỉ export model có sẵn
    ```
-   Dataset theo định dạng YOLO, classId đúng thứ tự `labels.txt`. Nguồn gợi ý: dataset biển báo VN trên
-   Kaggle/Roboflow (ví dụ từ Zalo AI 2020), cộng thêm video dashcam bạn tự quay rồi gán nhãn bằng Roboflow/CVAT.
-   Không bật lật ngang ảnh khi augment (script đã đặt `fliplr=0`).
+   Đổi model thì phải viết lại `labels.txt` theo đúng `names` của model.
 2. **Build.** Mở thư mục bằng Android Studio (JDK 17, SDK 35), hoặc:
    ```bash
    gradle wrapper --gradle-version 8.11.1   # lần đầu, nếu chưa có gradlew

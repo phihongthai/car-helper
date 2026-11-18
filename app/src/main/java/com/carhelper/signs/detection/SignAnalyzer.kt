@@ -31,6 +31,7 @@ class SignAnalyzer(
 ) : ImageAnalysis.Analyzer, Closeable {
 
     private var detector: SignDetector? = null
+    private var speedReader: SpeedReader? = null
     private var initAttempted = false
     private var lastTimestampNs = -1L
 
@@ -74,12 +75,7 @@ class SignAnalyzer(
         val padY = (inH - roiH * scale) / 2f
 
         // Một phép biến đổi duy nhất: xoay thẳng -> cắt ROI -> co giãn -> căn giữa.
-        matrix.reset()
-        when (rotation) {
-            90 -> { matrix.postRotate(90f); matrix.postTranslate(src.height.toFloat(), 0f) }
-            180 -> { matrix.postRotate(180f); matrix.postTranslate(src.width.toFloat(), src.height.toFloat()) }
-            270 -> { matrix.postRotate(270f); matrix.postTranslate(0f, src.width.toFloat()) }
-        }
+        uprightMatrix(matrix, rotation, src)
         matrix.postTranslate(-roiL, -roiT)
         matrix.postScale(scale, scale)
         matrix.postTranslate(padX, padY)
@@ -94,7 +90,6 @@ class SignAnalyzer(
         canvas.clipRect(padX, padY, padX + roiW * scale, padY + roiH * scale)
         canvas.drawBitmap(src, matrix, paint)
         canvas.restore()
-        src.recycle()
 
         val raw = det.detect(bmp, scoreThreshold, iouThreshold)
 
@@ -102,8 +97,11 @@ class SignAnalyzer(
         fun mapX(x: Float) = ((x * inW - padX) / scale + roiL) / uprightW
         fun mapY(y: Float) = ((y * inH - padY) / scale + roiT) / uprightH
         val mapped = raw.map { d ->
-            d.copy(box = Box(mapX(d.box.left), mapY(d.box.top), mapX(d.box.right), mapY(d.box.bottom)).clamped())
+            val box = Box(mapX(d.box.left), mapY(d.box.top), mapX(d.box.right), mapY(d.box.bottom)).clamped()
+            val withBox = d.copy(box = box)
+            if (d.label.code == SpeedReader.SPEED_CODE) readSpeed(withBox, src, rotation, uprightW, uprightH) else withBox
         }
+        src.recycle()
 
         onResult(
             FrameResult(
@@ -114,6 +112,35 @@ class SignAnalyzer(
                 inferenceMs = SystemClock.elapsedRealtime() - start,
             )
         )
+    }
+
+    /**
+     * Cắt biển tốc độ từ frame gốc (độ phân giải đầy đủ, không phải ảnh 640 đã thu nhỏ),
+     * phóng lên [SPEED_CROP_PX] rồi OCR. Đọc được số thì đổi sang classId/nhãn riêng của giá trị đó.
+     */
+    private fun readSpeed(d: Detection, src: Bitmap, rotation: Int, uprightW: Int, uprightH: Int): Detection {
+        val reader = speedReader ?: SpeedReader().also { speedReader = it }
+        val padW = d.box.width * SPEED_CROP_PAD
+        val padH = d.box.height * SPEED_CROP_PAD
+        val l = (d.box.left - padW).coerceAtLeast(0f) * uprightW
+        val t = (d.box.top - padH).coerceAtLeast(0f) * uprightH
+        val w = (d.box.right + padW).coerceAtMost(1f) * uprightW - l
+        val h = (d.box.bottom + padH).coerceAtMost(1f) * uprightH - t
+        if (w < 4f || h < 4f) return d
+
+        val s = SPEED_CROP_PX / maxOf(w, h)
+        val crop = Bitmap.createBitmap((w * s).toInt().coerceAtLeast(1), (h * s).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+        val m = Matrix()
+        uprightMatrix(m, rotation, src)
+        m.postTranslate(-l, -t)
+        m.postScale(s, s)
+        Canvas(crop).apply {
+            drawColor(Color.WHITE)
+            drawBitmap(src, m, paint)
+        }
+        val kmh = reader.read(crop)
+        crop.recycle()
+        return if (kmh == null) d else d.copy(classId = SpeedReader.speedClassId(kmh), label = SpeedReader.speedLabel(kmh))
     }
 
     private fun ensureDetector(): SignDetector? {
@@ -133,6 +160,8 @@ class SignAnalyzer(
     override fun close() {
         detector?.close()
         detector = null
+        speedReader?.close()
+        speedReader = null
         inputBitmap?.recycle()
         inputBitmap = null
         inputCanvas = null
@@ -140,6 +169,18 @@ class SignAnalyzer(
 
     companion object {
         private const val TAG = "SignAnalyzer"
+        private const val SPEED_CROP_PX = 192f
+        private const val SPEED_CROP_PAD = 0.1f
+
+        /** Đặt [m] thành phép xoay đưa frame cảm biến về khung đứng thẳng. */
+        private fun uprightMatrix(m: Matrix, rotation: Int, src: Bitmap) {
+            m.reset()
+            when (rotation) {
+                90 -> { m.postRotate(90f); m.postTranslate(src.height.toFloat(), 0f) }
+                180 -> { m.postRotate(180f); m.postTranslate(src.width.toFloat(), src.height.toFloat()) }
+                270 -> { m.postRotate(270f); m.postTranslate(0f, src.width.toFloat()) }
+            }
+        }
 
         /**
          * Xe chạy bên phải nên biển chủ yếu nằm ở phía trên bên phải khung hình (landscape).

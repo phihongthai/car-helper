@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
     private fun onFrameResult(result: FrameResult) {
         val byClass = result.detections.associateBy { it.classId }
         val announce = voter.update(byClass.keys, SystemClock.elapsedRealtime())
-        val labels = announce.mapNotNull { byClass[it]?.label }
+        val labels = announce.mapNotNull { byClass[it]?.label }.filterNot { it.silent }
         labels.forEach { speaker.speak(it.speech) }
         ui.update { s -> s.copy(lastResult = result, lastAnnounced = labels.lastOrNull() ?: s.lastAnnounced) }
     }
