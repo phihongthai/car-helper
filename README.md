@@ -13,7 +13,14 @@ CameraX (1280x720, RGBA, chỉ trong RAM)
   → biển tốc độ: cắt ảnh gốc, OCR đọc số (ML Kit)
   → bỏ phiếu 3/5 frame + không đọc lại cùng biển trong 30 giây
   → TextToSpeech tiếng Việt (tạm hạ nhỏ nhạc khi đọc)
+
+GPS (1 lần/giây) → so tốc độ xe với giới hạn của biển tốc độ gần nhất
+  → vượt quá 3 km/h liên tục 3 giây: đọc "Quá tốc độ. Giới hạn 60", nhắc lại mỗi 20 giây
+  → giới hạn giữ đến khi gặp biển tốc độ mới, hoặc hết sau 2 km
+    (model không có lớp biển "hết hạn chế")
 ```
+
+Góc dưới trái luôn hiện biển giới hạn đang áp dụng và tốc độ xe (cả ở chế độ màn hình đen).
 
 Cấu hình camera: FPS cảm biến 10–15, tắt auto-focus và khoá nét ở ~6,7 m (siêu tiêu cự),
 **giữ auto-exposure** (ép phơi sáng tay sẽ làm ảnh đen khi trời tối).
@@ -32,6 +39,7 @@ Nút **Màn hình đen** tắt preview và hạ độ sáng về 0 để máy m�
 | `app/.../system/ThermalGovernor.kt` | Giảm FPS theo nhiệt độ máy |
 | `app/src/main/assets/labels.txt` | Danh sách lớp, **thứ tự = classId** |
 | `app/.../detection/SpeedReader.kt` | OCR số trên biển hạn chế tốc độ (ML Kit) |
+| `app/.../speed/` | GPS + theo dõi giới hạn, cảnh báo quá tốc độ |
 | `training/train.py` | Huấn luyện YOLO |
 | `training/export_tflite.py` | Export .pt → TFLite NHWC vào assets |
 

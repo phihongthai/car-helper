@@ -38,7 +38,12 @@ class SpeedReader : Closeable {
         const val SPEED_CODE = "P.127"
 
         /** classId ảo cho từng giá trị tốc độ, để bỏ phiếu và chống lặp riêng từng biển. */
-        fun speedClassId(kmh: Int): Int = 10_000 + kmh
+        fun speedClassId(kmh: Int): Int = SPEED_ID_BASE + kmh
+
+        /** Giá trị tốc độ nếu [classId] là classId ảo của biển tốc độ đã đọc số, ngược lại null. */
+        fun speedFromClassId(classId: Int): Int? = if (classId > SPEED_ID_BASE) classId - SPEED_ID_BASE else null
+
+        private const val SPEED_ID_BASE = 10_000
 
         fun speedLabel(kmh: Int) = SignLabel("$SPEED_CODE $kmh", "Tốc độ tối đa $kmh")
     }
