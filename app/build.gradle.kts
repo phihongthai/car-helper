@@ -13,7 +13,10 @@ android {
         minSdk = 29 // cần cho PowerManager thermal API
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "0.2.0"
+
+        // Chỉ đóng gói thư viện native 64-bit ARM (mọi điện thoại hiện nay): APK nhỏ đi khoảng một nửa.
+        ndk { abiFilters += "arm64-v8a" }
     }
 
     buildTypes {
@@ -60,6 +63,9 @@ dependencies {
     implementation("com.google.ai.edge.litert:litert:1.0.1")
     implementation("com.google.ai.edge.litert:litert-gpu:1.0.1")
     implementation("com.google.ai.edge.litert:litert-gpu-api:1.0.1")
+
+    // Đọc số trên biển hạn chế tốc độ (model OCR đóng gói trong APK, chạy offline)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
     testImplementation("junit:junit:4.13.2")
 }

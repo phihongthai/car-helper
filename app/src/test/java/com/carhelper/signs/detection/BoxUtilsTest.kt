@@ -33,10 +33,27 @@ class BoxUtilsTest {
 
     @Test
     fun `label parser skips comments and falls back to code`() {
-        val labels = LabelParser.parse(sequenceOf("# header", "", "P.102|Cấm đi ngược chiều", "W.245", "R.303| "))
+        val labels = LabelParser.parse(
+            sequenceOf("# header", "", "P.102|Cấm đi ngược chiều", "W.245", "R.303| ", "R.434|Bến xe buýt|im"),
+        )
         assertEquals(
-            listOf(SignLabel("P.102", "Cấm đi ngược chiều"), SignLabel("W.245", "W.245"), SignLabel("R.303", "R.303")),
+            listOf(
+                SignLabel("P.102", "Cấm đi ngược chiều"),
+                SignLabel("W.245", "W.245"),
+                SignLabel("R.303", "R.303"),
+                SignLabel("R.434", "Bến xe buýt", silent = true),
+            ),
             labels,
         )
+    }
+
+    @Test
+    fun speedParserReadsValidLimits() {
+        assertEquals(60, SpeedParser.parse("60"))
+        assertEquals(50, SpeedParser.parse("5O\nkm/h")) // chữ O bị OCR nhầm
+        assertEquals(100, SpeedParser.parse("km/h 100"))
+        assertEquals(80, SpeedParser.parse("3.5t 80"))
+        assertEquals(null, SpeedParser.parse("65"))
+        assertEquals(null, SpeedParser.parse(""))
     }
 }

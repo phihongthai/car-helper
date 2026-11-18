@@ -14,14 +14,12 @@ Ví dụ (Colab / Kaggle có GPU):
 from __future__ import annotations
 
 import argparse
-import shutil
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 LABELS = ROOT / "app/src/main/assets/labels.txt"
-APP_MODEL = ROOT / "app/src/main/assets/traffic_signs.tflite"
 
 
 def read_class_codes() -> list[str]:
@@ -79,11 +77,9 @@ def main() -> None:
     if args.no_export:
         return
 
-    # half=True -> float16, input/output float32: đúng định dạng SignDetector đọc.
-    exported = Path(model.export(format="tflite", imgsz=args.imgsz, half=True))
-    APP_MODEL.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy(exported, APP_MODEL)
-    print(f"Đã copy model vào {APP_MODEL}")
+    from export_tflite import export
+
+    export(Path(model.trainer.best), args.imgsz, copy_to_app=True)
 
 
 if __name__ == "__main__":

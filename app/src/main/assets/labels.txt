@@ -1,36 +1,38 @@
-# Mỗi dòng: MÃ_QCVN41|câu đọc lên
-# THỨ TỰ DÒNG = classId của model. Phải khớp đúng với `names` lúc huấn luyện
-# (training/train.py đọc chính file này để sinh data.yaml).
+# Mỗi dòng: MÃ|câu đọc lên[|im]
+#   - THỨ TỰ DÒNG = classId của model, phải khớp `names` của model.
+#   - Thêm `|im` để chỉ hiện trên màn hình, không đọc (biển ít giá trị khi lái).
+#   - Lớp có mã P.127 được đọc số tốc độ bằng OCR ("Tốc độ tối đa 60").
+# Model hiện tại: YOLO11s 32 lớp, Secret350/Real-time-Traffic-Signs-Detection (Apache-2.0).
+# Mã viết thường (vd. gop_lan) là lớp gộp, không ứng với đúng một số hiệu QCVN 41.
+R.434|Bến xe buýt|im
+cam_phuong_tien|Biển cấm phương tiện
+chi_dan_huong|Chỉ dẫn hướng đi|im
+gop_lan|Gộp làn đường
 P.102|Cấm đi ngược chiều
-P.103a|Cấm xe ô tô
-P.104|Cấm xe máy
-P.106a|Cấm xe tải
-P.117|Hạn chế chiều cao
-P.123a|Cấm rẽ trái
-P.123b|Cấm rẽ phải
-P.124a|Cấm quay đầu
-P.124c|Cấm rẽ trái và quay đầu
-P.127_40|Tốc độ tối đa 40
-P.127_50|Tốc độ tối đa 50
-P.127_60|Tốc độ tối đa 60
-P.127_70|Tốc độ tối đa 70
-P.127_80|Tốc độ tối đa 80
-P.127_90|Tốc độ tối đa 90
-P.127_100|Tốc độ tối đa 100
-P.127_120|Tốc độ tối đa 120
-P.130|Cấm dừng và đỗ xe
+P.140|Cấm đi thẳng và rẽ phải
 P.131a|Cấm đỗ xe
-DP.135|Hết tất cả lệnh cấm
-R.122|Dừng lại
-R.301|Hướng đi phải theo
-R.303|Vòng xuyến
-W.201a|Chỗ ngoặt nguy hiểm bên trái
-W.201b|Chỗ ngoặt nguy hiểm bên phải
-W.202|Nhiều chỗ ngoặt nguy hiểm
-W.205a|Giao nhau phía trước
-W.207|Giao nhau với đường không ưu tiên
-W.208|Giao nhau với đường ưu tiên
-W.210|Giao nhau với đường sắt có rào chắn
+P.130|Cấm dừng và đỗ xe
+P.124a|Cấm quay đầu
+P.123b|Cấm rẽ phải
+P.123a|Cấm rẽ trái
+P.137|Cấm rẽ trái và rẽ phải
+P.124c|Cấm rẽ trái và quay đầu
+W.201|Chỗ ngoặt nguy hiểm
+I.409|Chỗ quay xe|im
+chuong_ngai_vat|Chú ý chướng ngại vật
+W.245a|Đi chậm
+W.203|Đường bị thu hẹp
+W.205|Đường giao nhau
+I.407a|Đường một chiều
 W.224|Người đi bộ cắt ngang
+W.207|Giao nhau với đường không ưu tiên
+W.210|Giao nhau với đường sắt có rào chắn
+P.117|Hạn chế chiều cao
+P.127|Biển hạn chế tốc độ
+P.115|Hạn chế trọng lượng xe
+go_giam_toc|Gồ giảm tốc phía trước
+kiem_tra|Trạm kiểm tra
+R.303|Vòng xuyến
+R.302a|Đi vòng sang bên phải
 W.225|Trẻ em
-W.245|Đi chậm
+I.423|Vạch qua đường cho người đi bộ|im
