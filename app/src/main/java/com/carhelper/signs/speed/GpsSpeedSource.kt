@@ -14,7 +14,7 @@ import java.io.Closeable
  */
 class GpsSpeedSource(
     context: Context,
-    private val onUpdate: (speedKmh: Float, odometerMeters: Double, nowMs: Long) -> Unit,
+    private val onUpdate: (speedKmh: Float, odometerMeters: Double, bearingDeg: Float?, nowMs: Long) -> Unit,
 ) : Closeable {
 
     private val manager = context.getSystemService(LocationManager::class.java)
@@ -29,7 +29,7 @@ class GpsSpeedSource(
             if (prev != null) odometer += prev.distanceTo(loc)
             last = loc
         }
-        onUpdate(loc.speed * 3.6f, odometer, loc.elapsedRealtimeNanos / 1_000_000)
+        onUpdate(loc.speed * 3.6f, odometer, if (loc.hasBearing()) loc.bearing else null, loc.elapsedRealtimeNanos / 1_000_000)
     }
 
     /** Cần quyền ACCESS_FINE_LOCATION đã được cấp. */

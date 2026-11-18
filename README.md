@@ -16,8 +16,9 @@ CameraX (1280x720, RGBA, chỉ trong RAM)
 
 GPS (1 lần/giây) → so tốc độ xe với giới hạn của biển tốc độ gần nhất
   → vượt quá 3 km/h liên tục 3 giây: đọc "Quá tốc độ. Giới hạn 60", nhắc lại mỗi 20 giây
-  → giới hạn giữ đến khi gặp biển tốc độ mới, hoặc hết sau 2 km
-    (model không có lớp biển "hết hạn chế")
+  → giới hạn giữ đến khi gặp biển tốc độ mới, rẽ/quay đầu (GPS đổi hướng > 60° trong 60 m),
+    hoặc hết sau 2 km (đi thẳng qua ngã tư thì không phát hiện được vì không có bản đồ;
+    model cũng không có lớp biển "hết hạn chế")
 ```
 
 Góc dưới trái luôn hiện biển giới hạn đang áp dụng và tốc độ xe (cả ở chế độ màn hình đen).

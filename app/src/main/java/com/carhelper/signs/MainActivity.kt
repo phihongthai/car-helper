@@ -89,8 +89,8 @@ class MainActivity : ComponentActivity() {
     }
 
     /** Chạy trên main thread, mỗi giây một lần. */
-    private fun onSpeed(speedKmh: Float, odometerMeters: Double, nowMs: Long) {
-        val alert = speedLimit.onSpeed(speedKmh, nowMs, odometerMeters)
+    private fun onSpeed(speedKmh: Float, odometerMeters: Double, bearingDeg: Float?, nowMs: Long) {
+        val alert = speedLimit.onSpeed(speedKmh, nowMs, odometerMeters, bearingDeg)
         val limit = speedLimit.currentLimit
         if (alert && limit != null) speaker.speak("Quá tốc độ. Giới hạn $limit")
         ui.update { it.copy(speedKmh = speedKmh, speedLimit = limit, overspeed = limit != null && speedKmh > limit + speedLimit.toleranceKmh) }
