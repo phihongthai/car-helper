@@ -1,0 +1,36 @@
+# Mỗi dòng: MÃ_QCVN41|câu đọc lên
+# THỨ TỰ DÒNG = classId của model. Phải khớp đúng với `names` lúc huấn luyện
+# (training/train.py đọc chính file này để sinh data.yaml).
+P.102|Cấm đi ngược chiều
+P.103a|Cấm xe ô tô
+P.104|Cấm xe máy
+P.106a|Cấm xe tải
+P.117|Hạn chế chiều cao
+P.123a|Cấm rẽ trái
+P.123b|Cấm rẽ phải
+P.124a|Cấm quay đầu
+P.124c|Cấm rẽ trái và quay đầu
+P.127_40|Tốc độ tối đa 40
+P.127_50|Tốc độ tối đa 50
+P.127_60|Tốc độ tối đa 60
+P.127_70|Tốc độ tối đa 70
+P.127_80|Tốc độ tối đa 80
+P.127_90|Tốc độ tối đa 90
+P.127_100|Tốc độ tối đa 100
+P.127_120|Tốc độ tối đa 120
+P.130|Cấm dừng và đỗ xe
+P.131a|Cấm đỗ xe
+DP.135|Hết tất cả lệnh cấm
+R.122|Dừng lại
+R.301|Hướng đi phải theo
+R.303|Vòng xuyến
+W.201a|Chỗ ngoặt nguy hiểm bên trái
+W.201b|Chỗ ngoặt nguy hiểm bên phải
+W.202|Nhiều chỗ ngoặt nguy hiểm
+W.205a|Giao nhau phía trước
+W.207|Giao nhau với đường không ưu tiên
+W.208|Giao nhau với đường ưu tiên
+W.210|Giao nhau với đường sắt có rào chắn
+W.224|Người đi bộ cắt ngang
+W.225|Trẻ em
+W.245|Đi chậm

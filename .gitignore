@@ -1,0 +1,15 @@
+*.iml
+.gradle/
+.idea/
+.DS_Store
+build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+*.keystore
+# training
+training/runs/
+training/data.generated.yaml
+*.pt
+__pycache__/
