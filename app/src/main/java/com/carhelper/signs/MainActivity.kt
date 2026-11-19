@@ -16,8 +16,11 @@ import com.carhelper.signs.camera.CameraController
 import com.carhelper.signs.detection.FrameResult
 import com.carhelper.signs.detection.SignAnalyzer
 import com.carhelper.signs.detection.SignDetector
+import com.carhelper.signs.detection.SpeedReader
 import com.carhelper.signs.detection.VoteTracker
 import com.carhelper.signs.speech.SignSpeaker
+import com.carhelper.signs.speed.GpsSpeedSource
+import com.carhelper.signs.speed.SpeedLimitTracker
 import com.carhelper.signs.system.ThermalGovernor
 import com.carhelper.signs.ui.MainScreen
 import com.carhelper.signs.ui.UiState
@@ -31,16 +34,20 @@ class MainActivity : ComponentActivity() {
     private val ui = MutableStateFlow(UiState())
     private val analysisExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private val voter = VoteTracker(window = 5, minHits = 3, cooldownMs = 30_000)
+    private val speedLimit = SpeedLimitTracker()
 
     private lateinit var previewView: PreviewView
     private lateinit var thermal: ThermalGovernor
     private lateinit var speaker: SignSpeaker
     private lateinit var analyzer: SignAnalyzer
     private var camera: CameraController? = null
+    private var gps: GpsSpeedSource? = null
 
-    private val requestCamera = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) startCamera() else ui.update { it.copy(cameraDenied = true) }
-    }
+    private val requestPermissions =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            if (result[Manifest.permission.CAMERA] == true) startCamera() else ui.update { it.copy(cameraDenied = true) }
+            if (result[Manifest.permission.ACCESS_FINE_LOCATION] == true) startGps() else ui.update { it.copy(gpsDenied = true) }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,11 +72,28 @@ class MainActivity : ComponentActivity() {
             MainScreen(state, previewView, ::setDarkMode)
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            startCamera()
-        } else {
-            requestCamera.launch(Manifest.permission.CAMERA)
+        val missing = listOf(Manifest.permission.CAMERA, Manifest.permission.ACCESS_FINE_LOCATION)
+            .filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
+        if (Manifest.permission.CAMERA !in missing) startCamera()
+        if (Manifest.permission.ACCESS_FINE_LOCATION !in missing) startGps()
+        if (missing.isNotEmpty()) {
+            // FINE cần đi kèm COARSE từ Android 12.
+            requestPermissions.launch((missing + Manifest.permission.ACCESS_COARSE_LOCATION).distinct().toTypedArray())
         }
+    }
+
+    private fun startGps() {
+        if (gps != null) return
+        ui.update { it.copy(gpsDenied = false) }
+        gps = GpsSpeedSource(this, ::onSpeed).also { it.start() }
+    }
+
+    /** Chạy trên main thread, mỗi giây một lần. */
+    private fun onSpeed(speedKmh: Float, odometerMeters: Double, bearingDeg: Float?, nowMs: Long) {
+        val alert = speedLimit.onSpeed(speedKmh, nowMs, odometerMeters, bearingDeg)
+        val limit = speedLimit.currentLimit
+        if (alert && limit != null) speaker.speak("Quá tốc độ. Giới hạn $limit")
+        ui.update { it.copy(speedKmh = speedKmh, speedLimit = limit, overspeed = limit != null && speedKmh > limit + speedLimit.toleranceKmh) }
     }
 
     private fun startCamera() {
@@ -83,6 +107,10 @@ class MainActivity : ComponentActivity() {
     private fun onFrameResult(result: FrameResult) {
         val byClass = result.detections.associateBy { it.classId }
         val announce = voter.update(byClass.keys, SystemClock.elapsedRealtime())
+        announce.firstNotNullOfOrNull { SpeedReader.speedFromClassId(it) }?.let { kmh ->
+            speedLimit.onLimitSign(kmh)
+            ui.update { it.copy(speedLimit = kmh) }
+        }
         val labels = announce.mapNotNull { byClass[it]?.label }.filterNot { it.silent }
         labels.forEach { speaker.speak(it.speech) }
         ui.update { s -> s.copy(lastResult = result, lastAnnounced = labels.lastOrNull() ?: s.lastAnnounced) }
@@ -99,6 +127,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         thermal.close()
+        gps?.close()
         speaker.close()
         analysisExecutor.execute { analyzer.close() }
         analysisExecutor.shutdown()

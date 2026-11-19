@@ -4,13 +4,17 @@ import android.graphics.Paint
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -34,6 +38,7 @@ import com.carhelper.signs.detection.DetectorStatus
 import com.carhelper.signs.detection.FrameResult
 import com.carhelper.signs.detection.SignLabel
 import com.carhelper.signs.system.ThermalGovernor
+import kotlin.math.roundToInt
 
 data class UiState(
     val detector: DetectorStatus = DetectorStatus.Loading,
@@ -44,6 +49,12 @@ data class UiState(
     val darkMode: Boolean = false,
     val thermalStatus: Int = 0,
     val intervalMs: Long = 200,
+    val gpsDenied: Boolean = false,
+    /** Tốc độ xe từ GPS, null nếu chưa có tín hiệu. */
+    val speedKmh: Float? = null,
+    /** Giới hạn tốc độ đang áp dụng (biển gần nhất), null nếu không có. */
+    val speedLimit: Int? = null,
+    val overspeed: Boolean = false,
 )
 
 @Composable
@@ -63,6 +74,8 @@ fun MainScreen(state: UiState, previewView: PreviewView, onDarkModeChange: (Bool
                         indication = null,
                     ) { onDarkModeChange(false) }
             )
+            // Vẫn hiện giới hạn + tốc độ: vùng nhỏ nên gần như không tốn pin/nhiệt trên OLED.
+            SpeedPanel(state, Modifier.align(Alignment.BottomStart).padding(16.dp))
             return@Box
         }
 
@@ -87,7 +100,10 @@ fun MainScreen(state: UiState, previewView: PreviewView, onDarkModeChange: (Bool
             StatusText("Máy ${ThermalGovernor.describe(state.thermalStatus)} · ${1000 / state.intervalMs} FPS")
             state.lastResult?.let { StatusText("Suy luận ${it.inferenceMs} ms") }
             if (state.cameraDenied) StatusText("Chưa cấp quyền camera", Color(0xFFFF8A80))
+            if (state.gpsDenied) StatusText("Chưa cấp quyền vị trí: tắt cảnh báo quá tốc độ", Color(0xFFFF8A80))
         }
+
+        SpeedPanel(state, Modifier.align(Alignment.BottomStart).padding(16.dp))
 
         state.lastAnnounced?.let { label ->
             Column(
@@ -106,6 +122,33 @@ fun MainScreen(state: UiState, previewView: PreviewView, onDarkModeChange: (Bool
             onClick = { onDarkModeChange(true) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         ) { Text("Màn hình đen") }
+    }
+}
+
+/** Biển giới hạn đang áp dụng (vòng đỏ) và tốc độ GPS; tốc độ chuyển đỏ khi quá giới hạn. */
+@Composable
+private fun SpeedPanel(state: UiState, modifier: Modifier) {
+    if (state.speedLimit == null && state.speedKmh == null) return
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        state.speedLimit?.let { limit ->
+            Box(
+                Modifier
+                    .size(72.dp)
+                    .background(Color.White, CircleShape)
+                    .border(8.dp, Color(0xFFD32F2F), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("$limit", color = Color.Black, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        state.speedKmh?.let { speed ->
+            Text(
+                "${speed.roundToInt()} km/h",
+                color = if (state.overspeed) Color(0xFFFF5252) else Color.White,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
 }
 
